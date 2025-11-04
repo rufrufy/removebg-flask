@@ -1,8 +1,28 @@
-version: "3.8"
+version: "3.9"
+
 services:
   removebg:
     build: .
-    container_name: removebg-api
+    container_name: removebg_api
+    restart: unless-stopped
     ports:
       - "5000:5000"
-    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+      - WORKERS=4
+      - TIMEOUT=120
+    command: >
+      gunicorn -w ${WORKERS:-4}
+               -k gevent
+               --worker-connections 100
+               -b 0.0.0.0:5000
+               --timeout ${TIMEOUT:-120}
+               app:app
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 512M

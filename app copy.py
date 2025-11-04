@@ -2,11 +2,9 @@ from io import BytesIO
 from flask import Flask, request, send_file, jsonify
 from rembg import remove
 from PIL import Image
-import concurrent.futures
 
 # ====== KONFIG ======
 MAX_UPLOAD_MB = 20
-MAX_WORKERS = 4              # Jumlah thread worker paralel
 TARGET_BYTES_DEFAULT = 1_000_000  # 1 MB
 MAX_SIDE_DEFAULT = 1600
 STEP_SHRINK = 0.85
@@ -14,17 +12,6 @@ MIN_SIDE = 300
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = MAX_UPLOAD_MB * 1024 * 1024
-executor = concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS)
-
-
-def process_image(file):
-    """Hapus background dan kembalikan hasil PNG."""
-    img = Image.open(file.stream)
-    output = remove(img).convert("RGBA")
-    buf = BytesIO()
-    output.save(buf, format="PNG", optimize=True)
-    buf.seek(0)
-    return buf
 
 
 @app.post("/api/removebg")
@@ -32,14 +19,18 @@ def remove_background():
     file = request.files.get("image")
     if not file:
         return jsonify({"error": "No file uploaded"}), 400
-
     try:
-        # Jalankan pemrosesan secara paralel di threadpool
-        future = executor.submit(process_image, file)
-        buf = future.result(timeout=60)  # Maks 60 detik per gambar
+        img = Image.open(file.stream)
+        # Hapus background
+        output = remove(img).convert("RGBA")
+
+        # Simpan ke memory buffer
+        buf = BytesIO()
+        output.save(buf, format="PNG", optimize=True)
+        buf.seek(0)
+
+        # Kembalikan langsung sebagai file PNG
         return send_file(buf, mimetype="image/png", as_attachment=False)
-    except concurrent.futures.TimeoutError:
-        return jsonify({"error": "Processing timeout"}), 504
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -56,5 +47,5 @@ def home():
     """
 
 
-# ⚙️ Catatan penting: jangan gunakan app.run() di produksi
-# Gunakan Gunicorn untuk menjalankan server (lihat Dockerfile/Docker Compose)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
