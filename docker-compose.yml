@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   removebg:
-    container_name: removebg_api
+    container_name: removebg_api_v2
     build:
       context: .
       dockerfile: Dockerfile
@@ -13,14 +13,6 @@ services:
       - WORKERS=4
       - TIMEOUT=120
       - PYTHONUNBUFFERED=1
-    deploy:
-      resources:
-        limits:
-          cpus: "2.0"
-          memory: 2G
-        reservations:
-          cpus: "0.5"
-          memory: 512M
     command: >
       gunicorn -w ${WORKERS:-4}
                -k gevent
