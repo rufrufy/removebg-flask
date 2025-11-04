@@ -1,16 +1,19 @@
 FROM python:3.11-slim
 
-# Install dependency sistem untuk Pillow & rembg
+# Tambahkan library sistem yang dibutuhkan
 RUN apt-get update && apt-get install -y \
-    libgl1 libglib2.0-0 libmagic1 \
+    libgl1 libglib2.0-0 libmagic1 execstack \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY . .
 
-# Install Python dependencies termasuk onnxruntime
+# Install dependency Python (gunakan versi stabil onnxruntime)
 RUN pip install --no-cache-dir \
-    flask gunicorn gevent rembg pillow onnxruntime==1.16.3
+    flask gunicorn gevent rembg pillow onnxruntime==1.14.1
+
+# Perbaiki permission eksekusi stack agar tidak error
+RUN find /usr/local/lib/python3.11/site-packages/onnxruntime/ -name "*.so" -exec execstack -c {} \; || true
 
 EXPOSE 5000
 

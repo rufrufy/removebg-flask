@@ -10,7 +10,6 @@ services:
     ports:
       - "5000:5000"
     environment:
-      # Jumlah worker paralel & timeout proses
       - WORKERS=4
       - TIMEOUT=120
       - PYTHONUNBUFFERED=1
