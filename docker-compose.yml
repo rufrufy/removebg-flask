@@ -2,15 +2,26 @@ version: "3.9"
 
 services:
   removebg:
-    build: .
     container_name: removebg_api
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
     ports:
       - "5000:5000"
     environment:
-      - PYTHONUNBUFFERED=1
+      # Jumlah worker paralel & timeout proses
       - WORKERS=4
       - TIMEOUT=120
+      - PYTHONUNBUFFERED=1
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
     command: >
       gunicorn -w ${WORKERS:-4}
                -k gevent
@@ -18,11 +29,3 @@ services:
                -b 0.0.0.0:5000
                --timeout ${TIMEOUT:-120}
                app:app
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '1.0'
-          memory: 512M
